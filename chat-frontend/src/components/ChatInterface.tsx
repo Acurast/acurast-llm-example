@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, Settings } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 interface Message {
@@ -9,7 +9,7 @@ interface Message {
   text: string;
 }
 
-const LLM_URL = "http://localhost:1234/v1/chat/completions";
+const DEFAULT_LLM_URL = "http://localhost:1234/v1/chat/completions";
 
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([
@@ -17,6 +17,23 @@ export default function ChatInterface() {
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [llmUrl, setLlmUrl] = useState(DEFAULT_LLM_URL);
+  const [tempLlmUrl, setTempLlmUrl] = useState(DEFAULT_LLM_URL);
+
+  useEffect(() => {
+    const savedUrl = localStorage.getItem("llmUrl");
+    if (savedUrl) {
+      setLlmUrl(savedUrl);
+      setTempLlmUrl(savedUrl);
+    }
+  }, []);
+
+  const handleSaveSettings = () => {
+    setLlmUrl(tempLlmUrl);
+    localStorage.setItem("llmUrl", tempLlmUrl);
+    setShowSettings(false);
+  };
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -27,7 +44,7 @@ export default function ChatInterface() {
     setIsTyping(true);
 
     try {
-      const response = await fetch(LLM_URL, {
+      const response = await fetch(llmUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -128,11 +145,53 @@ export default function ChatInterface() {
 
   return (
     <div className="flex flex-col h-screen w-full bg-white">
-      <div className="border-b border-[#E5E5E5] p-4">
+      <div className="border-b border-[#E5E5E5] p-4 flex justify-between items-center">
         <h1 className="text-xl font-semibold text-[#303030] border-b-2 border-[#c0e700] inline-block pb-1">
           Acurast LLM Example
         </h1>
+        <button
+          onClick={() => setShowSettings(true)}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <Settings size={20} className="text-[#303030]" />
+        </button>
       </div>
+
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[90%] max-w-md">
+            <h2 className="text-lg font-semibold mb-4">Settings</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  LLM API URL
+                </label>
+                <Input
+                  value={tempLlmUrl}
+                  onChange={(e) => setTempLlmUrl(e.target.value)}
+                  placeholder="Enter LLM API URL"
+                  className="w-full"
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveSettings}
+                  className="px-4 py-2 bg-[#c0e700] hover:bg-[#aad100] rounded-lg transition-colors"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto p-4">
         <div className="space-y-6">
           {messages.map((msg, index) => (
