@@ -5,6 +5,7 @@ import { createWriteStream, existsSync, readFileSync } from "fs";
 import { Readable } from "stream";
 import { finished } from "stream/promises";
 import { createTunnelWithRetry } from "./tunnel";
+import { getErrors, logError, clearErrors } from "./errors";
 
 declare let _STD_: any;
 
@@ -28,6 +29,15 @@ app.get("/", (req, res) => {
   res.send(processedHtmlContent);
 });
 
+app.get("/errors", (req, res) => {
+  res.json(getErrors());
+});
+
+app.post("/errors/clear", (req, res) => {
+  clearErrors();
+  res.json({ success: true, message: "Errors cleared" });
+});
+
 // LLM proxy route
 app.all("/llm/*", async (req, res) => {
   console.log("LLM proxy route", req.url);
@@ -47,7 +57,7 @@ app.all("/llm/*", async (req, res) => {
     // Log the raw request body
     console.log("Raw request body:", req.body);
 
-    // Format the request body to match LM Studio's expectations
+    // Format the request body to match LLM Server's expectations
     const body = {
       messages: Array.isArray(req.body.messages) ? req.body.messages : [],
       temperature: req.body.temperature || 0.7,
@@ -87,55 +97,91 @@ app.all("/llm/*", async (req, res) => {
     }
   } catch (error) {
     console.error("Proxy error:", error);
+    logError(error as Error, "LLM Proxy Route");
     res.status(502).json({ error: "Proxy error" });
   }
 });
 
 async function downloadModel(url: string, destination: string) {
   console.log("Downloading model", MODEL_NAME);
-  const res = await fetch(url);
+  try {
+    const res = await fetch(url);
 
-  if (!res.body) {
-    throw new Error("No response body");
-  }
-
-  console.log("Writing model to file:", destination);
-  const writer = createWriteStream(destination);
-  await finished(Readable.fromWeb(res.body as any).pipe(writer));
-}
-async function main() {
-  if (!existsSync(MODEL_FILE)) {
-    await downloadModel(MODEL_URL, MODEL_FILE);
-  } else {
-    console.log("Using already downloaded model:", MODEL_FILE);
-  }
-  console.log("Model downloaded, starting server...");
-
-  _STD_.llama.server.start(
-    ["--model", MODEL_FILE, "--ctx-size", "2048", "--threads", "8"],
-    () => {
-      // onCompletion
-      console.log("Llama server closed.");
-    },
-    (error: any) => {
-      // onError
-      console.log("Llama server error:", error);
-      throw error;
+    if (!res.body) {
+      throw new Error("No response body");
     }
-  );
 
-  const PORT = 3000;
-
-  const tunnel = await createTunnelWithRetry(ADDRESS, {
-    port: PORT,
-  });
-
-  // Start Express server
-  app.listen(PORT, () => {
-    console.log(`Express server listening on port ${PORT}`);
-  });
-
-  console.log("Server started at", tunnel.url);
+    console.log("Writing model to file:", destination);
+    const writer = createWriteStream(destination);
+    await finished(Readable.fromWeb(res.body as any).pipe(writer));
+  } catch (error) {
+    logError(error as Error, "Model Download");
+    throw error; // Re-throw to handle in the main function
+  }
 }
+
+async function main() {
+  try {
+    if (!existsSync(MODEL_FILE)) {
+      await downloadModel(MODEL_URL, MODEL_FILE);
+    } else {
+      console.log("Using already downloaded model:", MODEL_FILE);
+    }
+    console.log("Model downloaded, starting server...");
+
+    _STD_.llama.server.start(
+      ["--model", MODEL_FILE, "--ctx-size", "2048", "--threads", "8"],
+      () => {
+        // onCompletion
+        console.log("Llama server closed.");
+        logError("Llama server closed unexpectedly", "Llama Server");
+      },
+      (error: any) => {
+        // onError
+        console.log("Llama server error:", error);
+        logError(error, "Llama Server");
+        throw error;
+      }
+    );
+
+    const PORT = 3000;
+
+    try {
+      const tunnel = await createTunnelWithRetry(ADDRESS, {
+        port: PORT,
+      });
+      console.log("Server started at", tunnel.url);
+    } catch (tunnelError) {
+      logError(tunnelError as Error, "Tunnel Creation");
+      console.error(
+        "Failed to create tunnel, continuing with local server only"
+      );
+    }
+
+    // Start Express server
+    app.listen(PORT, () => {
+      console.log(`Express server listening on port ${PORT}`);
+    });
+  } catch (error) {
+    logError(error as Error, "Application Startup");
+    console.error("Fatal error during startup:", error);
+    process.exit(1);
+  }
+}
+
+// Add global error handler for uncaught exceptions
+process.on("uncaughtException", (error) => {
+  logError(error, "Uncaught Exception");
+  console.error("Uncaught Exception:", error);
+  // Don't exit the process to keep the application running
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  logError(
+    reason instanceof Error ? reason : new Error(String(reason)),
+    "Unhandled Promise Rejection"
+  );
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+});
 
 main();

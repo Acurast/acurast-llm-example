@@ -1,4 +1,5 @@
 import localtunnel from "localtunnel";
+import { logError } from "./errors";
 
 export async function createTunnelWithRetry(
   subdomain: string,
@@ -22,7 +23,9 @@ export async function createTunnelWithRetry(
         );
         return tunnel;
       } else {
-        console.log(`Failed to claim subdomain. ${tunnel.url}`);
+        const errorMsg = `Failed to claim subdomain. Got ${tunnel.url} instead of https://${subdomain}.acu.run`;
+        console.log(errorMsg);
+        logError(errorMsg, "Tunnel Creation");
         // Close the tunnel, if any, before retrying
         tunnel.close();
       }

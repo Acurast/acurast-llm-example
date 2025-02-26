@@ -56,7 +56,7 @@ export default function ChatInterface() {
               content: input,
             },
           ],
-          model: "llama-3.1-8b-lexi-uncensored-v2",
+          model: "Qwen2.5-0.5B-Instruct-Q4_K_M.gguf",
           temperature: 0.7,
           stream: true,
         }),
@@ -64,9 +64,9 @@ export default function ChatInterface() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("LM Studio error:", errorText);
+        console.error("LLM Server error:", errorText);
         throw new Error(
-          `Failed to get response from LM Studio (${response.status}): ${errorText}`
+          `Failed to get response from LLM Server (${response.status}): ${errorText}`
         );
       }
 
