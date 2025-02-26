@@ -1,6 +1,6 @@
 import path from "path";
 import express from "express";
-import { MODEL_URL, MODEL_NAME, STORAGE_DIR } from "./constants";
+import { MODEL_URL, MODEL_NAME, STORAGE_DIR, HTML_CONTENT } from "./constants";
 import { createWriteStream, existsSync, readFileSync } from "fs";
 import { Readable } from "stream";
 import { finished } from "stream/promises";
@@ -17,15 +17,15 @@ app.use(express.urlencoded({ extended: true }));
 
 const ADDRESS = _STD_.device.getAddress().toLowerCase();
 
-// Read the built frontend HTML file
-const htmlContent = readFileSync(
-  path.join(__dirname, "../../chat-frontend/dist/index.html"),
-  "utf-8"
-).replace("http://localhost:1234", `https://${ADDRESS}.acu.run/llm`);
+// Use the bundled HTML content with the correct URL
+const processedHtmlContent = HTML_CONTENT.replace(
+  /http:\/\/localhost:1234/g,
+  `https://${ADDRESS}.acu.run/llm`
+);
 
 // Serve the HTML content for the root route
 app.get("/", (req, res) => {
-  res.send(htmlContent);
+  res.send(processedHtmlContent);
 });
 
 // LLM proxy route
