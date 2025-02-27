@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { Loader2, Send, Settings } from "lucide-react";
@@ -20,6 +20,7 @@ export default function ChatInterface() {
   const [showSettings, setShowSettings] = useState(false);
   const [llmUrl, setLlmUrl] = useState(DEFAULT_LLM_URL);
   const [tempLlmUrl, setTempLlmUrl] = useState(DEFAULT_LLM_URL);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const savedUrl = localStorage.getItem("llmUrl");
@@ -28,6 +29,11 @@ export default function ChatInterface() {
       setTempLlmUrl(savedUrl);
     }
   }, []);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSaveSettings = () => {
     setLlmUrl(tempLlmUrl);
@@ -144,8 +150,9 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-white">
-      <div className="border-b border-[#E5E5E5] p-4 flex justify-between items-center">
+    <div className="flex flex-col h-screen max-h-screen w-full max-w-screen bg-white overflow-hidden">
+      {/* Header - Fixed at top */}
+      <div className="border-b border-[#E5E5E5] p-4 flex justify-between items-center sticky top-0 bg-white z-10">
         <h1 className="text-xl font-semibold text-[#303030] border-b-2 border-[#c0e700] inline-block pb-1">
           Acurast LLM Example
         </h1>
@@ -192,7 +199,8 @@ export default function ChatInterface() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-4">
+      {/* Messages area - Scrollable */}
+      <div className="flex-1 overflow-y-auto p-4 pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
         <div className="space-y-6">
           {messages.map((msg, index) => (
             <motion.div
@@ -242,9 +250,12 @@ export default function ChatInterface() {
               </div>
             </motion.div>
           )}
+          <div ref={messagesEndRef} />
         </div>
       </div>
-      <div className="p-4 border-t border-[#E5E5E5]">
+
+      {/* Input area - Fixed at bottom */}
+      <div className="p-4 border-t border-[#E5E5E5] sticky bottom-0 bg-white z-10">
         <div className="flex gap-2">
           <Input
             value={input}
