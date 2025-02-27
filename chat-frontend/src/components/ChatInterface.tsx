@@ -21,6 +21,35 @@ export default function ChatInterface() {
   const [llmUrl, setLlmUrl] = useState(DEFAULT_LLM_URL);
   const [tempLlmUrl, setTempLlmUrl] = useState(DEFAULT_LLM_URL);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // Set correct viewport height for mobile browsers
+  useEffect(() => {
+    const setViewportHeight = () => {
+      // Get the viewport height and multiply by 1% to get a value for a vh unit
+      const vh = window.innerHeight * 0.01;
+      // Set the value in the --vh custom property to the root of the document
+      document.documentElement.style.setProperty("--vh", `${vh}px`);
+
+      // Force re-render of chat container
+      if (chatContainerRef.current) {
+        chatContainerRef.current.style.height = `calc(100 * var(--vh))`;
+      }
+    };
+
+    // Set the height initially
+    setViewportHeight();
+
+    // Add event listener for resize and orientation change
+    window.addEventListener("resize", setViewportHeight);
+    window.addEventListener("orientationchange", setViewportHeight);
+
+    // Clean up
+    return () => {
+      window.removeEventListener("resize", setViewportHeight);
+      window.removeEventListener("orientationchange", setViewportHeight);
+    };
+  }, []);
 
   useEffect(() => {
     const savedUrl = localStorage.getItem("llmUrl");
@@ -150,11 +179,15 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col h-screen max-h-screen w-full max-w-screen bg-white overflow-hidden">
+    <div
+      ref={chatContainerRef}
+      className="flex flex-col w-full bg-white overflow-hidden"
+      style={{ height: "calc(100 * var(--vh, 1vh))" }}
+    >
       {/* Header - Fixed at top */}
       <div className="border-b border-[#E5E5E5] p-4 flex justify-between items-center sticky top-0 bg-white z-10">
         <h1 className="text-xl font-semibold text-[#303030] border-b-2 border-[#c0e700] inline-block pb-1">
-          Acurast LLM Example
+          Acurast Confidential LLM
         </h1>
         <button
           onClick={() => setShowSettings(true)}
@@ -255,7 +288,7 @@ export default function ChatInterface() {
       </div>
 
       {/* Input area - Fixed at bottom */}
-      <div className="p-4 border-t border-[#E5E5E5] sticky bottom-0 bg-white z-10">
+      <div className="p-4 border-t border-[#E5E5E5] sticky bottom-0 bg-white z-10 pb-safe">
         <div className="flex gap-2">
           <Input
             value={input}
