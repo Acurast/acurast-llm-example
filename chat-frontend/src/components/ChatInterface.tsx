@@ -22,6 +22,7 @@ export default function ChatInterface() {
   const [tempLlmUrl, setTempLlmUrl] = useState(DEFAULT_LLM_URL);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [safeAreaBottom, setSafeAreaBottom] = useState(0);
 
   // Set correct viewport height for mobile browsers
   useEffect(() => {
@@ -43,6 +44,36 @@ export default function ChatInterface() {
     // Add event listener for resize and orientation change
     window.addEventListener("resize", setViewportHeight);
     window.addEventListener("orientationchange", setViewportHeight);
+
+    // Check for iOS safe area
+    const checkSafeArea = () => {
+      // Only run on iOS devices
+      const isIOS =
+        /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+        !(window as unknown as { MSStream: unknown }).MSStream;
+      if (isIOS) {
+        // Add meta viewport tag with viewport-fit=cover if not present
+        let viewportMeta = document.querySelector('meta[name="viewport"]');
+        if (!viewportMeta) {
+          viewportMeta = document.createElement("meta");
+          viewportMeta.setAttribute("name", "viewport");
+          document.head.appendChild(viewportMeta);
+        }
+
+        const content = viewportMeta.getAttribute("content") || "";
+        if (!content.includes("viewport-fit=cover")) {
+          viewportMeta.setAttribute(
+            "content",
+            `${content}, viewport-fit=cover`
+          );
+        }
+
+        // Set a default safe area bottom padding (can be adjusted)
+        setSafeAreaBottom(34); // Common safe area height for iPhone X and newer
+      }
+    };
+
+    checkSafeArea();
 
     // Clean up
     return () => {
@@ -288,7 +319,15 @@ export default function ChatInterface() {
       </div>
 
       {/* Input area - Fixed at bottom */}
-      <div className="p-4 border-t border-[#E5E5E5] sticky bottom-0 bg-white z-10 pb-safe">
+      <div
+        className="border-t border-[#E5E5E5] sticky bottom-0 bg-white z-10"
+        style={{
+          paddingTop: "1rem",
+          paddingLeft: "1rem",
+          paddingRight: "1rem",
+          paddingBottom: `calc(1rem + ${safeAreaBottom}px)`,
+        }}
+      >
         <div className="flex gap-2">
           <Input
             value={input}
