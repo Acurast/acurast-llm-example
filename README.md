@@ -1,4 +1,4 @@
-# Acurast LLM Example
+# Acurast Confidential LLM Example
 
 > Find more examples in the [Acurast Examples Repository](https://github.com/acurast/acurast-example-apps)
 
