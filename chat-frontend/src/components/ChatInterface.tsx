@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
-import { Loader2, Send, Settings } from "lucide-react";
+import { Loader2, Send, Settings, ServerCrash, Check } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 interface Message {
@@ -23,6 +23,44 @@ export default function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [safeAreaBottom, setSafeAreaBottom] = useState(0);
+  const [systemStatus, setSystemStatus] = useState<
+    "loading" | "online" | "error"
+  >("loading");
+  const [statusMessage, setStatusMessage] = useState(
+    "Checking system status..."
+  );
+
+  // Check system status
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const healthUrl = new URL("/health", window.location.origin);
+        const response = await fetch(healthUrl.toString());
+        const data = await response.json();
+
+        if (data.status === "ok") {
+          setSystemStatus("online");
+          setStatusMessage(
+            "This LLM is running on the Acurast Cloud and all data is private."
+          );
+        } else {
+          setSystemStatus("error");
+          setStatusMessage(data.status);
+        }
+      } catch (error) {
+        setSystemStatus("error");
+        setStatusMessage(
+          "Could not connect to server: " + (error as Error).message
+        );
+      }
+    };
+
+    checkStatus();
+    // Check status every 30 seconds
+    const intervalId = setInterval(checkStatus, 30000);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   // Set correct viewport height for mobile browsers
   useEffect(() => {
@@ -228,6 +266,28 @@ export default function ChatInterface() {
         </button>
       </div>
 
+      {/* Status Indicator */}
+      <div className="flex justify-center my-2">
+        <div
+          className={`px-3 py-1 rounded-full text-xs flex items-center gap-1 ${
+            systemStatus === "online"
+              ? "bg-green-100 text-green-800"
+              : systemStatus === "error"
+              ? "bg-red-100 text-red-800"
+              : "bg-gray-100 text-gray-800"
+          }`}
+        >
+          {systemStatus === "online" ? (
+            <Check size={12} className="text-green-600" />
+          ) : systemStatus === "error" ? (
+            <ServerCrash size={12} className="text-red-600" />
+          ) : (
+            <Loader2 size={12} className="animate-spin text-gray-600" />
+          )}
+          <span>{statusMessage}</span>
+        </div>
+      </div>
+
       {showSettings && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-[90%] max-w-md">
@@ -244,6 +304,33 @@ export default function ChatInterface() {
                   className="w-full"
                 />
               </div>
+
+              <div>
+                <h3 className="block text-sm font-medium text-gray-700 mb-1">
+                  About
+                </h3>
+                <p className="text-sm text-gray-600 mb-2">
+                  This LLM is deployed on{" "}
+                  <a
+                    href="https://acurast.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Acurast, the decentralised cloud
+                  </a>
+                  . The code of this app can be audited and all chat data is
+                  completely private.
+                </p>
+                <a
+                  href="https://github.com/Acurast/acurast-llm-example"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  View on GitHub
+                </a>
+              </div>
+
               <div className="flex justify-end space-x-2">
                 <button
                   onClick={() => setShowSettings(false)}
