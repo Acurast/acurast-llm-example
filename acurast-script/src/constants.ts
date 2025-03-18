@@ -25,6 +25,15 @@ export const MODEL_URL =
 export const MODEL_NAME = "Qwen2.5-0.5B-Instruct-Q4_K_M.gguf";
 export const STORAGE_DIR = _STD_.job.storageDir;
 
+// Custom configuration from environment variables
+export const CUSTOM_SYSTEM_PROMPT = _STD_.env?.CUSTOM_SYSTEM_PROMPT || "";
+export const CUSTOM_WEBSITE_TITLE = _STD_.env?.CUSTOM_WEBSITE_TITLE || "";
+export const REPORT_URL = _STD_.env?.REPORT_URL || "";
+
+// Base64 encoded favicon.ico (green Acurast-style favicon)
+export const FAVICON_BASE64 =
+  "iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAMAAAD04JH5AAAAHlBMVEUAAAAAAAAAAAC05gAAAAC36gCbxgAeJgBJXQCCpgCyUr7OAAAAA3RSTlOorG6FpXe8AAABmklEQVR4nO3bwQ7CMAwD0I3Sdf3/HwbONIkTkk1I7hUkHsZtxhDbY99uXPtj25+3rvfbvxewEUAAAQQQQAABBBBAAAEEEEAAAQQQQMCfAc4mr3kF4Ogy4LwAoATQYwE4AUoAfVwAOJXXDwbgA+Q3wAcoaIAPUNAAF6CiAS5ARQM8gJoAHAAtgHADHICSLeABFAUAA4oagANqtgAOqGoADCg5BB2AsgaggLIGgIC6BoCAugZggMIGYACrAUNYWQArgHGsFxYOADAbMPt6QfvDBthbYLRvYm+9HzkAYAzO5VOwCEwAsgWG8DgSgQmADsF1BA2JwAJgh+APEVgA8BCMt8AAoIfgED6DwzyNDAA8BsMt0AH4GBSeabdABzjGYLQFKsAzBsUW/AJwXQgFI9AApzBkPut71AVboAGmMGc/a7G9YhtBA0gXGsLFRuw4zLxTGmpBJiAUQeq94kgLUgGRCHLvlgdakAtYXR02fSgm/14w1x+C8gXy336wIIAAAggggAACCCCAAAIIIIAAAggggIAKwO1/fr/77/8v9t718JRtiCUAAAAASUVORK5CYII=";
+
 /**
  * HTML_CONTENT is defined by webpack.DefinePlugin at build time.
  * This approach ensures we can access it regardless of the environment:

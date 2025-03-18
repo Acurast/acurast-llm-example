@@ -1,6 +1,15 @@
 import path from "path";
 import express from "express";
-import { MODEL_URL, MODEL_NAME, STORAGE_DIR, HTML_CONTENT } from "./constants";
+import {
+  MODEL_URL,
+  MODEL_NAME,
+  STORAGE_DIR,
+  HTML_CONTENT,
+  CUSTOM_WEBSITE_TITLE,
+  CUSTOM_SYSTEM_PROMPT,
+  REPORT_URL,
+  FAVICON_BASE64,
+} from "./constants";
 import { createWriteStream, existsSync, readFileSync } from "fs";
 import { Readable } from "stream";
 import { finished } from "stream/promises";
@@ -18,15 +27,54 @@ app.use(express.urlencoded({ extended: true }));
 
 const ADDRESS = _STD_.device.getAddress().toLowerCase();
 
-// Use the bundled HTML content with the correct URL
-const processedHtmlContent = HTML_CONTENT.replace(
+// Use the bundled HTML content with the correct URL and custom title if provided
+let processedHtmlContent = HTML_CONTENT.replace(
   /http:\/\/localhost:1234/g,
   `https://${ADDRESS}.acu.run/llm`
 );
 
+// Apply custom website title if provided
+if (CUSTOM_WEBSITE_TITLE) {
+  processedHtmlContent = processedHtmlContent.replace(
+    /<title>Acurast Confidential LLM<\/title>/,
+    `<title>Acurast Confidential LLM: ${CUSTOM_WEBSITE_TITLE}</title>`
+  );
+}
+
 // Serve the HTML content for the root route
 app.get("/", (req, res) => {
   res.send(processedHtmlContent);
+});
+
+// Serve favicon.ico
+app.get("/favicon.ico", (req, res) => {
+  try {
+    const faviconBuffer = Buffer.from(FAVICON_BASE64, "base64");
+    res.set("Content-Type", "image/x-icon");
+    res.set("Cache-Control", "public, max-age=86400"); // Cache for 24 hours
+    res.send(faviconBuffer);
+  } catch (error) {
+    console.error("Error serving favicon:", error);
+    res.status(404).send("Favicon not found");
+  }
+});
+
+app.get("/health", (req, res) => {
+  try {
+    // Check if llama server is running
+    if (_STD_.llama.server.isRunning?.()) {
+      res.json({ status: "ok" });
+    } else {
+      res.json({
+        status:
+          "Error: LLM server not running. Give it some time and try again, or report to the Acurast team.",
+      });
+    }
+  } catch (error) {
+    res.json({
+      status: `Error: ${error instanceof Error ? error.message : String(error)}`,
+    });
+  }
 });
 
 app.get("/errors", (req, res) => {
@@ -62,13 +110,24 @@ app.all("/llm/*", async (req, res) => {
       messages: Array.isArray(req.body.messages) ? req.body.messages : [],
       temperature: req.body.temperature || 0.7,
       stream: req.body.stream || false,
-      model: req.body.model || "llama-3.1-8b-lexi-uncensored-v2",
+      model: req.body.model,
       max_tokens: req.body.max_tokens || 2048,
       stop: req.body.stop || null,
       frequency_penalty: req.body.frequency_penalty || 0,
       presence_penalty: req.body.presence_penalty || 0,
       top_p: req.body.top_p || 1,
     };
+
+    // Add custom system prompt if provided
+    if (CUSTOM_SYSTEM_PROMPT && body.messages.length > 0) {
+      body.messages = [
+        {
+          role: "system",
+          content: CUSTOM_SYSTEM_PROMPT,
+        },
+        ...body.messages,
+      ];
+    }
 
     const stringifiedBody = JSON.stringify(body);
     console.log("Sending body:", stringifiedBody);
@@ -151,6 +210,27 @@ async function main() {
         port: PORT,
       });
       console.log("Server started at", tunnel.url);
+
+      // Report deployment URL if configured
+      if (REPORT_URL) {
+        try {
+          await fetch(REPORT_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              deploymentUrl: tunnel.url,
+              address: ADDRESS,
+              timestamp: new Date().toISOString(),
+            }),
+          });
+          console.log("Deployment URL reported successfully");
+        } catch (reportError) {
+          console.error("Failed to report deployment URL:", reportError);
+          logError(reportError as Error, "URL Reporting");
+        }
+      }
     } catch (tunnelError) {
       logError(tunnelError as Error, "Tunnel Creation");
       console.error(
