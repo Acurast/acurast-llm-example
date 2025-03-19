@@ -34,7 +34,7 @@ export const registerUrl = async (deploymentUrl: string): Promise<void> => {
 
   const response = await fetch(`${REGISTER_URL}/deployments/register`, {
     method: "POST",
-    body: JSON.stringify({ ...info, signature }),
+    body: JSON.stringify({ ...info, type: "llm", signature }),
   });
 
   if (!response.ok) {
