@@ -32,7 +32,7 @@ export const registerUrl = async (deploymentUrl: string): Promise<void> => {
     _STD_.chains.bitcoin.signer.sha256(hexString)
   );
 
-  const response = await fetch(`${REGISTER_URL}/deployment/register`, {
+  const response = await fetch(`${REGISTER_URL}/deployments/register`, {
     method: "POST",
     body: JSON.stringify({ ...info, signature }),
   });
