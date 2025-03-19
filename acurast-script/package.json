@@ -14,6 +14,7 @@
   "license": "MIT",
   "dependencies": {
     "@acurast/dapp": "^1.0.1-beta.6",
+    "@dotenvx/dotenvx": "^1.39.0",
     "express": "^4.21.2",
     "localtunnel": "^2.0.2",
     "node-telegram-bot-api": "^0.66.0",

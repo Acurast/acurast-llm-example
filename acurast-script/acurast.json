@@ -6,11 +6,12 @@
       "network": "canary",
       "onlyAttestedDevices": true,
       "assignmentStrategy": {
-        "type": "Single"
+        "type": "Competing"
       },
       "execution": {
-        "type": "onetime",
-        "maxExecutionTimeInMs": 360000000
+        "type": "interval",
+        "intervalInMs": 3600000,
+        "numberOfExecutions": 10
       },
       "maxAllowedStartDelayInMs": 10000,
       "usageLimit": {
@@ -18,11 +19,17 @@
         "maxNetworkRequests": 0,
         "maxStorage": 0
       },
-      "numberOfReplicas": 10,
+      "numberOfReplicas": 20,
       "requiredModules": [],
       "minProcessorReputation": 0,
       "maxCostPerExecution": 10000000000,
-      "includeEnvironmentVariables": [],
+      "includeEnvironmentVariables": [
+        "MODEL_URL",
+        "MODEL_NAME",
+        "CUSTOM_SYSTEM_PROMPT",
+        "CUSTOM_WEBSITE_TITLE",
+        "REGISTER_URL"
+      ],
       "processorWhitelist": []
     }
   }

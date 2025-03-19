@@ -7,19 +7,22 @@ import {
   HTML_CONTENT,
   CUSTOM_WEBSITE_TITLE,
   CUSTOM_SYSTEM_PROMPT,
-  REPORT_URL,
+  REGISTER_URL,
   FAVICON_BASE64,
 } from "./constants";
-import { createWriteStream, existsSync, readFileSync } from "fs";
+import { createWriteStream, existsSync } from "fs";
 import { Readable } from "stream";
 import { finished } from "stream/promises";
 import { createTunnelWithRetry } from "./tunnel";
 import { getErrors, logError, clearErrors } from "./errors";
+import { DEPLOYMENT, registerUrl } from "./register";
 
 declare let _STD_: any;
 
 const MODEL_FILE = path.resolve(STORAGE_DIR, MODEL_NAME);
 const app = express();
+
+const EXECUTION_START_TIME = Date.now();
 
 // Add body parsing middleware
 app.use(express.json());
@@ -36,8 +39,8 @@ let processedHtmlContent = HTML_CONTENT.replace(
 // Apply custom website title if provided
 if (CUSTOM_WEBSITE_TITLE) {
   processedHtmlContent = processedHtmlContent.replace(
-    /<title>Acurast Confidential LLM<\/title>/,
-    `<title>Acurast Confidential LLM: ${CUSTOM_WEBSITE_TITLE}</title>`
+    /Acurast Confidential LLM/g,
+    `Acurast Confidential LLM: ${CUSTOM_WEBSITE_TITLE}`
   );
 }
 
@@ -59,26 +62,38 @@ app.get("/favicon.ico", (req, res) => {
   }
 });
 
-app.get("/health", (req, res) => {
+app.get("/health", async (req, res) => {
   try {
-    // Check if llama server is running
-    if (_STD_.llama.server.isRunning?.()) {
-      res.json({ status: "ok" });
-    } else {
-      res.json({
-        status:
-          "Error: LLM server not running. Give it some time and try again, or report to the Acurast team.",
-      });
-    }
+    const response = await fetch(`http://127.0.0.1:8080/health`);
+    const data = await response.json();
+    res.json({
+      status: "ok",
+      timeSinceStart: (Date.now() - EXECUTION_START_TIME) / 1000,
+      ...data,
+    });
   } catch (error) {
     res.json({
-      status: `Error: ${error instanceof Error ? error.message : String(error)}`,
+      status: "error",
+      message: "LLM server not running",
+      timeSinceStart: (Date.now() - EXECUTION_START_TIME) / 1000,
     });
   }
 });
 
 app.get("/errors", (req, res) => {
   res.json(getErrors());
+});
+
+app.get("/debug", (req, res) => {
+  res.json({
+    MODEL_URL,
+    MODEL_NAME,
+    CUSTOM_WEBSITE_TITLE,
+    CUSTOM_SYSTEM_PROMPT,
+    REGISTER_URL,
+    DEPLOYMENT,
+    timestamp: Date.now(),
+  });
 });
 
 app.post("/errors/clear", (req, res) => {
@@ -205,6 +220,11 @@ async function main() {
 
     const PORT = 3000;
 
+    // Start Express server
+    app.listen(PORT, () => {
+      console.log(`Express server listening on port ${PORT}`);
+    });
+
     try {
       const tunnel = await createTunnelWithRetry(ADDRESS, {
         port: PORT,
@@ -212,19 +232,9 @@ async function main() {
       console.log("Server started at", tunnel.url);
 
       // Report deployment URL if configured
-      if (REPORT_URL) {
+      if (REGISTER_URL) {
         try {
-          await fetch(REPORT_URL, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              deploymentUrl: tunnel.url,
-              address: ADDRESS,
-              timestamp: new Date().toISOString(),
-            }),
-          });
+          await registerUrl(tunnel.url);
           console.log("Deployment URL reported successfully");
         } catch (reportError) {
           console.error("Failed to report deployment URL:", reportError);
@@ -237,11 +247,6 @@ async function main() {
         "Failed to create tunnel, continuing with local server only"
       );
     }
-
-    // Start Express server
-    app.listen(PORT, () => {
-      console.log(`Express server listening on port ${PORT}`);
-    });
   } catch (error) {
     logError(error as Error, "Application Startup");
     console.error("Fatal error during startup:", error);

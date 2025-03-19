@@ -45,7 +45,7 @@ export default function ChatInterface() {
           );
         } else {
           setSystemStatus("error");
-          setStatusMessage(data.status);
+          setStatusMessage(data.message);
         }
       } catch (error) {
         setSystemStatus("error");
