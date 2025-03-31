@@ -1,3 +1,6 @@
+import dotenv from "@dotenvx/dotenvx";
+dotenv.config();
+
 declare let _STD_: any;
 // HTML_CONTENT is defined by webpack at build time as a global variable
 
@@ -8,7 +11,17 @@ if (typeof _STD_ === "undefined") {
   (global as any)._STD_ = {
     app_info: { version: "local" },
     job: { getId: () => "local", storageDir: "./" },
-    device: { getAddress: () => "local" },
+    device: {
+      getAddress: () => `local-${Math.random().toString(36).substring(2, 15)}`,
+    },
+    chains: {
+      bitcoin: {
+        signer: {
+          rawSign: () => "local",
+          sha256: () => "local",
+        },
+      },
+    },
     llama: {
       server: {
         start: () => {
@@ -20,15 +33,25 @@ if (typeof _STD_ === "undefined") {
 }
 
 // Model constants
-export const MODEL_URL =
-  "https://huggingface.co/bartowski/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/Qwen2.5-0.5B-Instruct-Q4_K_M.gguf";
-export const MODEL_NAME = "Qwen2.5-0.5B-Instruct-Q4_K_M.gguf";
+export const MODEL_URL = _STD_.env?.MODEL_URL || process.env.MODEL_URL || "";
+export const MODEL_NAME = _STD_.env?.MODEL_NAME || process.env.MODEL_NAME || "";
 export const STORAGE_DIR = _STD_.job.storageDir;
 
+if (!MODEL_URL || !MODEL_NAME) {
+  throw new Error("MODEL_URL and MODEL_NAME must be set");
+}
+
 // Custom configuration from environment variables
-export const CUSTOM_SYSTEM_PROMPT = _STD_.env?.CUSTOM_SYSTEM_PROMPT || "";
-export const CUSTOM_WEBSITE_TITLE = _STD_.env?.CUSTOM_WEBSITE_TITLE || "";
-export const REPORT_URL = _STD_.env?.REPORT_URL || "";
+export const CUSTOM_SYSTEM_PROMPT =
+  _STD_.env?.CUSTOM_SYSTEM_PROMPT || process.env.CUSTOM_SYSTEM_PROMPT || "";
+export const CUSTOM_WEBSITE_TITLE =
+  _STD_.env?.CUSTOM_WEBSITE_TITLE || process.env.CUSTOM_WEBSITE_TITLE || "";
+export const REGISTER_URL =
+  _STD_.env?.REGISTER_URL || process.env.REGISTER_URL || "";
+
+console.log("CUSTOM_SYSTEM_PROMPT", CUSTOM_SYSTEM_PROMPT);
+console.log("CUSTOM_WEBSITE_TITLE", CUSTOM_WEBSITE_TITLE);
+console.log("REGISTER_URL", REGISTER_URL);
 
 // Base64 encoded favicon.ico (green Acurast-style favicon)
 export const FAVICON_BASE64 =

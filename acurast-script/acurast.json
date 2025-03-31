@@ -22,7 +22,44 @@
       "requiredModules": [],
       "minProcessorReputation": 0,
       "maxCostPerExecution": 10000000000,
-      "includeEnvironmentVariables": [],
+      "includeEnvironmentVariables": [
+        "MODEL_URL",
+        "MODEL_NAME",
+        "CUSTOM_SYSTEM_PROMPT",
+        "CUSTOM_WEBSITE_TITLE",
+        "REGISTER_URL"
+      ],
+      "processorWhitelist": []
+    },
+    "llm-competing": {
+      "projectName": "llm-competing",
+      "fileUrl": "dist/bundle.js",
+      "network": "canary",
+      "onlyAttestedDevices": true,
+      "assignmentStrategy": {
+        "type": "Competing"
+      },
+      "execution": {
+        "type": "onetime",
+        "maxExecutionTimeInMs": 360000000
+      },
+      "maxAllowedStartDelayInMs": 10000,
+      "usageLimit": {
+        "maxMemory": 0,
+        "maxNetworkRequests": 0,
+        "maxStorage": 0
+      },
+      "numberOfReplicas": 1,
+      "requiredModules": [],
+      "minProcessorReputation": 0,
+      "maxCostPerExecution": 10000000000,
+      "includeEnvironmentVariables": [
+        "MODEL_URL",
+        "MODEL_NAME",
+        "CUSTOM_SYSTEM_PROMPT",
+        "CUSTOM_WEBSITE_TITLE",
+        "REGISTER_URL"
+      ],
       "processorWhitelist": []
     }
   }
