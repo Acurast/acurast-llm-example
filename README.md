@@ -20,6 +20,7 @@ git clone https://github.com/acurast/acurast-llm-example.git
 cd chat-frontend
 npm install
 npm run build-single
+cd ..
 ```
 
 3. Install and build the acurast script
@@ -28,18 +29,26 @@ npm run build-single
 cd acurast-script
 npm install
 npm run build
+cd ..
 ```
 
-> Note: Make sure you have a `.env` file in the `acurast-script` directory.
+4. Create .env file
 
-4. Deploy the acurast script
+```bash
+cd acurast-script
+mv .env.example .env
+acurast init
+cd ..
+```
+
+5. Deploy the acurast script
 
 ```bash
 cd acurast-script
 npm run deploy
 ```
 
-5. Wait for the deployment to start, then open the URL in your browser.
+6. Wait for the deployment to start, then open the URL in your browser.
 
 ```bash
 open http://<processor-address-lowercase>.acu.run/

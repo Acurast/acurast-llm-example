@@ -8,7 +8,7 @@
     "build": "cd ../chat-frontend && npm run build && cd ../acurast-script && webpack",
     "bundle": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "deploy": "npm run bundle && acurast deploy"
+    "deploy": "npm run bundle && acurast deploy llm"
   },
   "author": "Andreas Gassmann <andreas@acurast.com>",
   "license": "MIT",
