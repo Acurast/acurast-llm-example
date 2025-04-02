@@ -36,7 +36,7 @@ cd ..
 
 ```bash
 cd acurast-script
-mv .env.example .env
+cp .env.example .env
 acurast init
 cd ..
 ```
